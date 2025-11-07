@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vitalis - Patient Medical Support App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+        }
+        .glass-effect {
+            /* Adjusted for better contrast on a phone screen */
+            background: rgba(255, 255, 255, 0.05); /* Slightly darker, more visible background */
+            backdrop-filter: blur(15px); /* Increased blur */
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.3); /* Stronger border */
+        }
+        .hero-bg {
+            background: linear-gradient(135deg, #0052D4, #4364F7, #6FB1FC);
+            overflow: hidden;
+            position: relative;
+        }
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            transform-origin: center;
+            animation: rotateGrid 120s linear infinite;
+        }
+        @keyframes rotateGrid {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .feature-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .pulse {
+            animation: pulse-animation 2s infinite;
+        }
+        @keyframes pulse-animation {
+            0% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(255, 82, 82, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); }
+        }
+        /* Scroll Animation */
+        .reveal {
+            position: relative;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: 1s all ease;
+        }
+        .reveal.active {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        /* New CSS for Phone Mockup */
+        .phone-frame {
+            position: relative;
+            width: 300px; /* Base width */
+            height: 600px; /* Base height (2:1 aspect ratio) */
+            border: 10px solid #2d3748; /* dark gray border */
+            border-radius: 40px;
+            padding: 10px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            margin: 0 auto; /* Center the frame */
+            background-color: #000; /* Screen background */
+        }
+        .phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 20px;
+            background: #2d3748;
+            border-radius: 0 0 15px 15px;
+            z-index: 10;
+        }
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            border-radius: 30px;
+            position: relative;
+            /* Added to center the content within the frame */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .chart-container {
+             /* Adjusted to fill the screen space better */
+            width: 100%;
+            height: 100%;
+            padding: 10px; /* Inner padding for the "app" screen */
+            box-sizing: border-box;
+        }
+        /* Media Query for larger screens */
+        @media (min-width: 768px) {
+            .phone-frame {
+                width: 380px;
+                height: 760px;
+                border: 15px solid #2d3748;
+                border-radius: 50px;
+                padding: 15px;
+            }
+            .phone-notch {
+                width: 120px;
+                height: 25px;
+                border-radius: 0 0 20px 20px;
+            }
+            .phone-screen {
+                border-radius: 35px;
+            }
+            .chart-container {
+                padding: 20px;
+            }
+        }
+        /* New Styles for Monitored Vital Signs Section */
+        /* glowing text effect */
+        .text-glow {
+            text-shadow: 0 0 8px rgba(0, 191, 255, 0.6);
+        }
+        
+        /* color coded text for results */
+        .text-green-400 { color: #4ade80; }
+        .text-yellow-400 { color: #facc15; }
+        .text-red-500 { color: #ef4444; }
+
+        /* --- New Styles for Iframe Embedding & Cropping --- */
+        .iframe-cropper-wrapper {
+            position: fixed; /* Use fixed to cover the whole screen */
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden; /* This is the "crop" part */
+            background: #fff; /* Background color for the page */
+            z-index: 50; /* Make sure it's on top */
+        }
+        /* This class is for WIX sites (hides banner) */
+        .embedded-iframe {
+            width: 100%;
+            height: calc(100vh + 100px); /* Make iframe taller than viewport */
+            border: none;
+            margin-top: -80px; /* This negative margin hides the Wix banner */
+            opacity: 0; /* JS will fade this in */
+            transition: opacity 0.5s ease;
+        }
+        /* NEW CLASS: This is for non-Wix sites (like GitHub) */
+        .embedded-iframe-github {
+            width: 100%;
+            height: 100vh; /* Fills the viewport normally */
+            border: none;
+            margin-top: 0; /* No negative margin */
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div id="loading-spinner" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+         <div class="w-16 h-16 border-4 border-t-white border-gray-500 rounded-full animate-spin"></div>
+    </div>
+
+    <header id="header" class="fixed w-full top-0 z-50 transition-all duration-300">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-white flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2 text-cyan-300" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+                </svg>
+                Vitalis ver. 1.0
+            </div>
+            <div class="hidden md:flex space-x-8 items-center">
+                <a href="#features" class="text-white hover:text-cyan-300 transition-colors">Features</a>
+                <a href="#how-it-works" class="text-white hover:text-cyan-300 transition-colors">How It Works</a>
+                <a href="#testimonials" class="text-white hover:text-cyan-300 transition-colors">Testimonials</a>
+            </div>
+            <button class="md:hidden text-white">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </nav>
+    </header>
+
+    <main class="hero-bg text-white pt-24 md:pt-32 pb-20">
+        <div class="container mx-auto px-6 text-center flex flex-col items-center">
+            <h1 class="text-4xl md:text-6xl font-black leading-tight mb-4">Your Health, Monitored.</h1>
+            <h2 class="text-5xl md:text-7xl font-black leading-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-white mb-6">Anytime, Anywhere.</h2>
+            <p class="text-lg md:text-xl max-w-3xl mx-auto mb-10 text-gray-200">
+                Vitalis is your smart healthcare companion, providing reliable, real-time tracking of your vital signs right from your smartphone. Stay connected to your health and gain peace of mind.
+            </p>
+            
+            <div class="flex space-x-4 mb-16">
+                <button id="demo-button" class="bg-white text-blue-600 font-bold px-8 py-4 rounded-full hover:bg-cyan-300 hover:text-white transition-all transform hover:scale-105 shadow-lg">
+                    DEMO
+                </button>
+            </div>
+            <div class="w-full max-w-4xl mx-auto flex justify-center">
+                <div class="phone-frame">
+                    <div class="phone-notch"></div>
+                    <div class="phone-screen">
+                        <div class="chart-container">
+                             <div class="glass-effect rounded-2xl p-4 md:p-6 shadow-2xl h-full flex flex-col">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-white text-lg md:text-2xl font-bold">Heart Rate</h3>
+                                    <div class="text-right">
+                                        <p class="text-2xl md:text-4xl font-black text-cyan-300 pulse">72 <span class="text-lg text-white font-normal">BPM</span></p>
+                                        <p class="text-sm text-gray-300">Normal</p>
+                                    </div>
+                                </div>
+                                <div class="flex-grow relative">
+                                    <canvas id="vitalSignsChart" class="w-full h-full absolute"></canvas>
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <section id="features" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16 reveal">
+                <h2 class="text-4xl font-bold text-gray-800">A Smarter Way to Stay Healthy</h2>
+                <p class="text-lg text-gray-500 mt-2">Everything you need for comprehensive health monitoring</p>
+            </div>
+            
+            <div class="w-full max-w-4xl mx-auto p-8 md:p-12 text-gray-800 reveal">
+                <h3 class="text-4xl font-bold text-center mb-12 text-gray-800 text-glow" data-translate-key="vitalsTitle">Monitored Vital Signs</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-10 text-center">
+                    <div class="flex flex-col items-center">
+                        <div class="text-6xl mb-3">🩸</div>
+                        <span class="font-semibold text-lg" data-translate-key="bp">Blood Pressure</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="text-6xl mb-3">❤️</div>
+                        <span class="font-semibold text-lg" data-translate-key="pulse">Pulse Rate</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="text-6xl mb-3">🫁</div>
+                        <span class="font-semibold text-lg" data-translate-key="resp">Respiratory Rate</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="text-6xl mb-3">🌡️</div>
+                        <span class="font-semibold text-lg" data-translate-key="temp">Body Temperature</span>
+                    </div>
+                     <div class="flex flex-col items-center col-span-2 sm:col-span-1 md:col-span-1">
+                        <div class="relative mb-3 text-6xl">
+                            <span>🩸</span>
+                            <span class="absolute top-0 left-1/4 transform -translate-x-1/2 h-3 w-3 bg-blue-500 rounded-full"></span>
+                            <span class="absolute top-1/2 right-0 transform -translate-y-1/2 h-3 w-3 bg-blue-500 rounded-full"></span>
+                            <span class="absolute bottom-0 left-1/2 transform -translate-x-1/2 h-3 w-3 bg-blue-500 rounded-full"></span>
+                            <span class="absolute top-1/4 left-3/4 transform -translate-x-1/2 h-3 w-3 bg-blue-500 rounded-full"></span>
+                            <span class="absolute bottom-1/4 right-1/4 transform -translate-x-1/2 h-3 w-3 bg-blue-500 rounded-full"></span>
+                        </div>
+                        <span class="font-semibold text-lg" data-translate-key="o2">Oxygen Saturation</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="py-20">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16 reveal">
+                <h2 class="text-4xl font-bold text-gray-800">Get Started in 3 Simple Steps</h2>
+                <p class="text-lg text-gray-500 mt-2">Monitoring your health has never been easier.</p>
+            </div>
+            <div class="flex flex-col md:flex-row justify-center items-center gap-8 md:gap-16">
+                 <div class="text-center w-64 reveal">
+                    <div class="relative mb-4">
+                       <div class="bg-white rounded-full w-32 h-32 flex items-center justify-center mx-auto shadow-xl border-4 border-blue-200">
+                           <span class="text-5xl font-bold text-blue-500">1</span>
+                       </div>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Download App</h3>
+                    <p class="text-gray-500">Get the Vitalis app from the Alphamed digital products.</p>
+                </div>
+                 <div class="text-center w-64 reveal">
+                    <div class="relative mb-4">
+                       <div class="bg-white rounded-full w-32 h-32 flex items-center justify-center mx-auto shadow-xl border-4 border-blue-200">
+                           <span class="text-5xl font-bold text-blue-500">2</span>
+                       </div>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Install in your Device</h3>
+                    <p class="text-gray-500">Online and offline capability,
+can function without an internet connection.</p>
+                </div>
+                 <div class="text-center w-64 reveal">
+                    <div class="relative mb-4">
+                       <div class="bg-white rounded-full w-32 h-32 flex items-center justify-center mx-auto shadow-xl border-4 border-blue-200">
+                           <span class="text-5xl font-bold text-blue-500">3</span>
+                       </div>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Start Monitoring</h3>
+                    <p class="text-gray-500">You're all set! Track your vitals and live a healthier life.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="testimonials" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16 reveal">
+                <h2 class="text-4xl font-bold text-gray-800">Trusted by Patients and Medical Professional </h2>
+                <p class="text-lg text-gray-500 mt-2">Hear what our users have to say about Vitalis.</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-gray-50 p-8 rounded-2xl reveal">
+                    <p class="text-gray-600 mb-6 italic">"I love how this app integrates technology into patient care. With just a few taps, I can check vital trends and spot any abnormalities right away. It saves time and improves accuracy—perfect for busy nurses like me."</p>
+                    <div class="flex items-center">
+                        <img class="w-12 h-12 rounded-full mr-4" src="https://placehold.co/100x100/E2E8F0/4A5568?text=VL" alt="Avatar of Jane Smith">
+                        <div>
+                            <p class="font-bold">Vlad L.</p>
+                            <p class="text-sm text-gray-500">Nurse</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 p-8 rounded-2xl reveal">
+                    <p class="text-gray-600 mb-6 italic">"Super helpful! I can now monitor my blood pressure, heart rate, and temperature anytime. It gives me peace of mind knowing I can see my health updates in real-time, I’ve become more aware of my daily health status. It motivates me to maintain a healthy lifestyle and track my improvements."</p>
+                    <div class="flex items-center">
+                        <img class="w-12 h-12 rounded-full mr-4" src="https://placehold.co/100x100/E2E8F0/4A5568?text=MS" alt="Avatar of Dr. Mark">
+                        <div>
+                            <p class="font-bold">Mark Stevens</p>
+                            <p class="text-sm text-gray-500">Patient</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section id="download" class="hero-bg py-20 text-white">
+        <div class="container mx-auto px-6 text-center reveal">
+             <h2 class="text-4xl font-bold mb-4">Take Control of Your Health Today</h2>
+             <p class="text-lg text-gray-200 max-w-2xl mx-auto mb-10">Download Vitalis and start your journey towards a healthier, more informed life. Multi-Platform accessibility
+works seamlessly on computers, laptops, Android phones, and tablets.
+
+User-friendly interface with responsive design.</p>
+             <div class="flex justify-center space-x-4">
+                
+                <a href="#" class="bg-white/90 hover:bg-white transition-colors rounded-lg flex items-center p-3 w-48 shadow-lg group">
+                    <span class="text-5xl group-hover:text-blue-600 transition-colors">📱</span>
+                    <span class="font-semibold text-lg text-gray-800 ml-3">Android Phone</span>
+                </a>
+                
+                <a href="#" class="bg-white/90 hover:bg-white transition-colors rounded-lg flex items-center p-3 w-48 shadow-lg group">
+                    <span class="text-5xl group-hover:text-blue-600 transition-colors">💻</span>
+                    <span class="font-semibold text-lg text-gray-800 ml-3"> Computer</span>
+                </a>
+            </div>
+            
+            <div class="mt-12">
+                <button id="register-download-button" class="bg-white text-blue-600 font-bold px-10 py-4 rounded-full hover:bg-cyan-300 hover:text-white transition-all transform hover:scale-105 shadow-lg text-xl">
+                    Register and Download
+                </button>
+            </div>
+            
+        </div>
+    </section>
+    
+    <div id="iframe-container" class="w-full h-full transition-all duration-500 ease-in-out hidden">
+        </div>
+
+    <footer class="bg-gray-800 text-white py-12">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2024 Vitalis Health Inc. All rights reserved.</p>
+            <div class="flex justify-center space-x-6 mt-4">
+                <a href="#" class="hover:text-cyan-300">Privacy Policy</a>
+                <a href="#" class="hover:text-cyan-300">Terms of Service</a>
+                <a href="#" class="hover:text-cyan-300">Contact Us</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // --- Live Chart Simulation ---
+        const ctx = document.getElementById('vitalSignsChart').getContext('2d');
+        let chartData = {
+            labels: Array(25).fill(''),
+            datasets: [{
+                label: 'Heart Rate',
+                data: [],
+                borderColor: '#67e8f9', // cyan-300
+                borderWidth: 3,
+                tension: 0.4,
+                pointRadius: 0,
+                fill: true,
+                backgroundColor: 'rgba(103, 232, 249, 0.1)',
+            }]
+        };
+
+        // Pre-fill with some initial data
+        for (let i = 0; i < 25; i++) {
+            chartData.datasets[0].data.push(70 + Math.random() * 10 - 5);
+        }
+
+        const vitalSignsChart = new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // Important to allow the chart to fill the dynamic container
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 40,
+                        max: 120,
+                        grid: {
+                           color: 'rgba(255, 255, 255, 0.1)',
+                        },
+                        ticks: {
+                            display: false
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false,
+                        },
+                        ticks: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                animation: {
+                    duration: 200
+                }
+            }
+        });
+
+        // Function to update chart data to simulate live feed
+        function updateChart() {
+            const newDataPoint = 70 + Math.random() * 10 - 5; // Simulate a heartbeat around 70 BPM
+            chartData.datasets[0].data.shift();
+            chartData.datasets[0].data.push(newDataPoint);
+            vitalSignsChart.update();
+        }
+
+        setInterval(updateChart, 500);
+
+        // --- Header Scroll Effect ---
+        const header = document.getElementById('header');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                header.classList.add('bg-blue-800/80', 'backdrop-blur-lg', 'shadow-lg');
+            } else {
+                header.classList.remove('bg-blue-800/80', 'backdrop-blur-lg', 'shadow-lg');
+            }
+        });
+
+        // --- Reveal on Scroll Animation ---
+        function reveal() {
+            var reveals = document.querySelectorAll(".reveal");
+
+            for (var i = 0; i < reveals.length; i++) {
+                var windowHeight = window.innerHeight;
+                var elementTop = reveals[i].getBoundingClientRect().top;
+                var elementVisible = 150;
+
+                if (elementTop < windowHeight - elementVisible) {
+                    reveals[i].classList.add("active");
+                } else {
+                    reveals[i].classList.remove("active");
+                }
+            }
+        }
+
+        window.addEventListener("scroll", reveal);
+        // Trigger reveal on load
+        reveal();
+
+
+        // --- NEW: Iframe Embed Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get references to elements
+            const demoButton = document.getElementById('demo-button');
+            const registerDownloadButton = document.getElementById('register-download-button'); // New button
+            const iframeContainer = document.getElementById('iframe-container');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const header = document.getElementById('header'); // Get header for hiding
+
+            // --- URLs to be embedded ---
+            const demoUrl = 'https://alphamedassistance.wixsite.com/1105';
+            const registerUrl = 'https://alphamedassistance.github.io/vitalisdla/'; // New URL
+            
+            // --- Core Embed Function ---
+            // MODIFIED: Now accepts an iframeClass parameter
+            const loadIframe = (embedUrl, clickedButton, iframeClass) => {
+                loadingSpinner.classList.remove('hidden');
+                
+                if (clickedButton) {
+                    clickedButton.disabled = true; // Disable the button that was clicked
+                }
+
+                if(header) {
+                    header.classList.add('opacity-0', 'transform', '-translate-y-4');
+                }
+                
+                // 1. Creates the full-screen wrapper
+                const iframeWrapper = document.createElement('div');
+                iframeWrapper.classList.add('iframe-cropper-wrapper');
+
+                // 2. Creates the <iframe> element
+                const iframe = document.createElement('iframe');
+                iframe.src = embedUrl; // 3. Sets the source URL
+                iframe.id = 'embedded-link';
+                
+                // 4. MODIFIED: Applies the correct class based on the button clicked
+                iframe.classList.add(iframeClass); 
+                
+                iframe.onload = () => {
+                    loadingSpinner.classList.add('hidden');
+                    iframe.style.opacity = '1'; // Fade in
+                };
+                
+                iframe.onerror = () => {
+                    loadingSpinner.classList.add('hidden');
+                    iframeContainer.innerHTML = '<p class="text-red-500 p-4 bg-red-100 rounded-lg">Error loading content...</p>';
+                };
+
+                // 5. Appends the iframe to the wrapper
+                iframeWrapper.appendChild(iframe);
+                // 6. Appends the wrapper to the page container
+                iframeContainer.appendChild(iframeWrapper);
+
+                // 7. Creates the "Exit" button
+                const exitButton = document.createElement('button');
+                exitButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                `;
+                exitButton.classList.add(
+                    'fixed', 'top-4', 'right-4', 'z-[100]', 'bg-red-500', 'text-white', 'p-3',
+                    'rounded-full', 'shadow-xl', 'hover:bg-red-600', 'transition',
+                    'flex', 'items-center', 'justify-center'
+                );
+                
+                // 8. Sets the exit button to reload the page
+                exitButton.onclick = () => window.location.reload();
+                
+                setTimeout(() => {
+                    if(header) {
+                        header.classList.add('hidden');
+                    }
+                    iframeContainer.classList.remove('hidden'); // This will now show the wrapper
+                    document.body.appendChild(exitButton);
+                    
+                    // Styles body for full-screen mode
+                    document.body.classList.add('overflow-hidden');
+                }, 300); // Short delay
+            };
+
+            // --- Event Listeners (MODIFIED) ---
+            // Passes the class for the WIX embed
+            demoButton.addEventListener('click', () => loadIframe(demoUrl, demoButton, 'embedded-iframe'));
+            
+            // Passes the class for the GITHUB embed
+            registerDownloadButton.addEventListener('click', () => loadIframe(registerUrl, registerDownloadButton, 'embedded-iframe-github'));
+        });
+    </script>
+</body>
+</html>
